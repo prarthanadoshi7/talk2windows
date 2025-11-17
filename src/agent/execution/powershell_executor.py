@@ -22,7 +22,8 @@ class PowerShellExecutor:
     def run(self, tool_name: str, args: Dict[str, object]) -> Tuple[int, str, str]:
         """Execute a script by ID and return (exit_code, stdout, stderr)."""
         self._validate_tool_name(tool_name)
-        params_json = json.dumps(args or {})
+        # Change to simple key=value format
+        params_str = ','.join(f'{k}={v}' for k, v in args.items())
         command = [
             "powershell.exe",
             "-NoProfile",
@@ -30,8 +31,8 @@ class PowerShellExecutor:
             self.executor_path,
             "-ScriptID",
             tool_name,
-            "-ParamsJson",
-            params_json,
+            "-ParamsStr",
+            params_str,
         ]
 
         try:

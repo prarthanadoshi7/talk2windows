@@ -161,9 +161,79 @@ class AgentService:
             return hashed == stored
         return False
 
+    def _detect_app_command(self, transcript: str) -> Optional[Dict]:
+        """Detect if transcript is an app-related command and extract details."""
+        import re
+        transcript_lower = transcript.lower()
+        
+        # Patterns for opening/launching apps
+        open_patterns = [
+            r'\b(open|launch|start|run)\s+(\w+(?:\s+\w+)*?)(?:\s+app|\s+application)?\b',
+            r'\b(open|launch|start|run)\s+the\s+(\w+(?:\s+\w+)*?)(?:\s+app|\s+application)?\b'
+        ]
+        
+        for pattern in open_patterns:
+            match = re.search(pattern, transcript_lower)
+            if match:
+                action = match.group(1)
+                app_name = match.group(2).strip()
+                # Skip if app_name is a common word or command
+                skip_words = ['file', 'explorer', 'browser', 'calculator', 'notepad', 'edge', 'firefox', 'chrome', 'teams', 'outlook', 'spotify', 'recycle', 'bin', 'downloads', 'documents']
+                if app_name.lower() not in skip_words:
+                    return {'action': 'open', 'app_name': app_name, 'tool': 'open-app-by-name', 'args': {'AppName': app_name}}
+        
+        # Also check for install commands - try to find specific install script
+        install_patterns = [
+            r'\b(install|download|get)\s+(\w+(?:\s+\w+)*?)(?:\s+app|\s+application)?\b',
+            r'\b(install|download|get)\s+the\s+(\w+(?:\s+\w+)*?)(?:\s+app|\s+application)?\b'
+        ]
+        
+        for pattern in install_patterns:
+            match = re.search(pattern, transcript_lower)
+            if match:
+                action = match.group(1)
+                app_name = match.group(2).strip()
+                # Check if there's a specific install script
+                install_script = f"install-{app_name.replace(' ', '-')}.ps1"
+                script_path = os.path.join(self.catalog_manager.scripts_dir, 'apps', 'install', install_script)
+                if os.path.exists(script_path):
+                    tool_id = f"install-{app_name.replace(' ', '-')}"
+                    return {'action': 'install', 'app_name': app_name, 'tool': tool_id, 'args': {}}
+        
+        return None
+
     async def handle_transcript(self, transcript: str):
         """Process a voice transcript and execute the appropriate tool or plan."""
         try:
+            # Check for direct app commands first
+            app_command = self._detect_app_command(transcript)
+            if app_command:
+                self.logger.info(f"Detected app command: {app_command['action']} {app_command['app_name']}")
+                # Directly execute the detected tool
+                tool_name = app_command['tool']
+                args = app_command['args']
+                level = self.risk_levels.get(tool_name, 'low')
+                if not await self.confirm(f"Execute {tool_name}", level):
+                    result = f"Skipped {tool_name}: not confirmed"
+                    self.logger.info(result)
+                    await asyncio.get_event_loop().run_in_executor(None, self.tts.say, result)
+                    return result
+                exit_code, stdout, stderr = await asyncio.get_event_loop().run_in_executor(
+                    None, self.executor.run, tool_name, args
+                )
+                observation = self._format_execution_observation(
+                    tool_name, exit_code, stdout, stderr
+                )
+                self.logger.info(observation)
+                result_text = str(stdout or stderr or exit_code)
+                await asyncio.get_event_loop().run_in_executor(None, self.tts.say, result_text)
+                # Log to memory
+                self.memory.recent_actions.append(
+                    {'tool': tool_name, 'args': args, 'result': observation}
+                )
+                self.memory.save('recent_actions', self.memory.recent_actions)
+                return observation
+            
             # Two-stage intelligence: First search semantic index, then ask Gemini
             relevant_tools = None
             if self.discovery_mode == 'auto':

@@ -10,6 +10,7 @@ Usage:
 """
 import asyncio
 import logging
+import os
 import sys
 from ..core.service import AgentService
 from ..config.config import setup_environment
@@ -24,6 +25,9 @@ logging.basicConfig(
 
 async def process_voice_command(command: str):
     """Process a voice command through the Gemini agent."""
+    # Disable TTS for bridge operations to avoid hanging
+    os.environ['TALK2WINDOWS_DISABLE_TTS'] = '1'
+    
     service = AgentService(prompt_provider=lambda _: 'yes')
     
     result = await service.handle_transcript(command)

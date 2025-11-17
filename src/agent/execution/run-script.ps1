@@ -3,7 +3,7 @@ param(
     [string]$ScriptID,
 
     [Parameter(Mandatory=$true)]
-    [string]$ParamsJson
+    [string]$ParamsStr
 )
 
 try {
@@ -27,10 +27,14 @@ try {
             $scriptPath = Join-Path $scriptsRoot "$ScriptID.ps1"
         }
     }
-    $paramsJson = $ParamsJson | ConvertFrom-Json
+    # Parse ParamsStr like "AppName=grok"
     $params = @{}
-    if ($paramsJson) {
-        $paramsJson.PSObject.Properties | ForEach-Object { $params[$_.Name] = $_.Value }
+    if ($ParamsStr) {
+        $ParamsStr -split ',' | ForEach-Object {
+            if ($_ -match '^(.*?)=(.*)$') {
+                $params[$matches[1]] = $matches[2]
+            }
+        }
     }
 } catch {
     $stderr = "Invalid JSON in ParamsJson: $($_.Exception.Message)"
@@ -60,7 +64,6 @@ try {
     # Build argument list
     $argList = @("-NoProfile", "-File", $scriptPath)
     foreach ($param in $params.GetEnumerator()) {
-        $argList += "-$($param.Key)"
         $argList += $param.Value
     }
 

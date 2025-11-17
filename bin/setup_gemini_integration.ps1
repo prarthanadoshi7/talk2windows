@@ -154,8 +154,35 @@ serenade.global().command(WAKE_WORD + " help", async (api) => {
     }
 }
 
+function Update-BackendCatalog {
+    Write-Host "[4.5/6] Updating backend tool catalog and semantic index..." -NoNewline
+    try {
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        $pythonExe = (Get-Command python).Source
+        
+        # Generate tool catalog
+        $catalogResult = & $pythonExe -c "from src.agent.core.tool_catalog_manager import ToolCatalogManager; tcm = ToolCatalogManager(); tcm.generate_catalog(); print('Catalog generated')" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host " WARNING" -ForegroundColor Yellow
+            Write-Host "  Catalog generation had issues: $catalogResult" -ForegroundColor Yellow
+        }
+        
+        # Rebuild semantic index
+        $indexResult = & $pythonExe -c "from src.agent.core.semantic_index import SemanticIndex; si = SemanticIndex(); si.rebuild_index(); print('Semantic index rebuilt')" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host " WARNING" -ForegroundColor Yellow
+            Write-Host "  Index rebuild had issues: $indexResult" -ForegroundColor Yellow
+        }
+        
+        Write-Host " OK" -ForegroundColor Green
+    } catch {
+        Write-Host " WARNING" -ForegroundColor Yellow
+        Write-Host "  Could not update backend catalog. Continuing..." -ForegroundColor Yellow
+    }
+}
+
 function Disable-OldConfig {
-    Write-Host "[5/6] Ensuring only AI configuration is active..." -NoNewline
+    Write-Host "[5/7] Ensuring only AI configuration is active..." -NoNewline
     try {
         $oldConfig = "$HOME\.serenade\scripts\Talk2Windows.js"
         if (Test-Path $oldConfig) {
@@ -170,7 +197,7 @@ function Disable-OldConfig {
 }
 
 function Start-Serenade {
-    Write-Host "[6/6] Starting Serenade application..." -NoNewline
+    Write-Host "[6/7] Starting Serenade application..." -NoNewline
     try {
         # Try common installation paths
         $serenadePaths = @(
@@ -216,6 +243,8 @@ function Start-Serenade {
 
 function Show-Completion {
     Write-Host ""
+    Write-Host "[7/7] Setup complete!" -ForegroundColor Green
+    Write-Host ""
     Write-Host "================================================================" -ForegroundColor Green
     Write-Host "                     Setup Complete!" -ForegroundColor Green
     Write-Host "================================================================" -ForegroundColor Green
@@ -244,6 +273,7 @@ try {
     $wakeWord = Get-WakeWord
     Stop-SerenadeProcesses
     Generate-GeminiConfig -wakeWord $wakeWord -targetFile $targetFile
+    Update-BackendCatalog
     Disable-OldConfig
     Start-Serenade
     Show-Completion
