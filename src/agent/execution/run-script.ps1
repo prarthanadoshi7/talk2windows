@@ -2,8 +2,8 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$ScriptID,
 
-    [Parameter(Mandatory=$true)]
-    [string]$ParamsStr
+    [Parameter(Mandatory=$false)]
+    [string]$ParamsStr = ""
 )
 
 try {

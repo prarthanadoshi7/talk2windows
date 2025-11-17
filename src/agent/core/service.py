@@ -166,20 +166,32 @@ class AgentService:
         import re
         transcript_lower = transcript.lower()
         
-        # Patterns for opening/launching apps
+        # Patterns for opening/launching apps - updated to capture dots, dashes, and special chars
+        # Pattern explanation: [^\s]+ matches any non-whitespace including dots, dashes, etc.
         open_patterns = [
-            r'\b(open|launch|start|run)\s+(\w+(?:\s+\w+)*?)(?:\s+app|\s+application)?\b',
-            r'\b(open|launch|start|run)\s+the\s+(\w+(?:\s+\w+)*?)(?:\s+app|\s+application)?\b'
-        ]
+                # "open app grok", "open application blackbox.ai", "open program grok" and optional 'the' or 'named'
+                r'\b(open|launch|start|run)\s+(?:the\s+)?(?:app|application|program)\s+(?:named\s+)?([^\s]+(?:\s+[^\s]+)*?)(?:\s+(?:app|application|program|please|now))?\s*$',
+                # "open the grok app", "open the blackbox.ai application"
+                r'\b(open|launch|start|run)\s+the\s+([^\s]+(?:\s+[^\s]+)*?)\s+(?:app|application|program)\b',
+                # "open grok app", "open blackbox.ai application" with optional 'please' or 'now'
+                r'\b(open|launch|start|run)\s+(?:please\s+|now\s+)?([^\s]+(?:\s+[^\s]+)*?)\s+(?:app|application|program)\b',
+                # legacy pattern "open grok" or "open blackbox.ai"
+                r'\b(open|launch|start|run)\s+([^\s]+(?:\s+[^\s]+)*?)\s*$'
+            ]
         
         for pattern in open_patterns:
             match = re.search(pattern, transcript_lower)
             if match:
                 action = match.group(1)
                 app_name = match.group(2).strip()
-                # Skip if app_name is a common word or command
-                skip_words = ['file', 'explorer', 'browser', 'calculator', 'notepad', 'edge', 'firefox', 'chrome', 'teams', 'outlook', 'spotify', 'recycle', 'bin', 'downloads', 'documents']
-                if app_name.lower() not in skip_words:
+                # Normalize name and return
+                app_name = app_name.strip().strip('"\'')
+                # Remove common trailing polite words
+                app_name = re.sub(r'\s+(please|now)$', '', app_name).strip()
+                # If the app name captured 'the' or 'application', skip to let Gemini handle it
+                if app_name.lower() in ['the', 'application', 'app', 'program', '']:
+                    continue
+                if app_name:
                     return {'action': 'open', 'app_name': app_name, 'tool': 'open-app-by-name', 'args': {'AppName': app_name}}
         
         # Also check for install commands - try to find specific install script
@@ -205,44 +217,25 @@ class AgentService:
     async def handle_transcript(self, transcript: str):
         """Process a voice transcript and execute the appropriate tool or plan."""
         try:
-            # Check for direct app commands first
-            app_command = self._detect_app_command(transcript)
-            if app_command:
-                self.logger.info(f"Detected app command: {app_command['action']} {app_command['app_name']}")
-                # Directly execute the detected tool
-                tool_name = app_command['tool']
-                args = app_command['args']
-                level = self.risk_levels.get(tool_name, 'low')
-                if not await self.confirm(f"Execute {tool_name}", level):
-                    result = f"Skipped {tool_name}: not confirmed"
-                    self.logger.info(result)
-                    await asyncio.get_event_loop().run_in_executor(None, self.tts.say, result)
-                    return result
-                exit_code, stdout, stderr = await asyncio.get_event_loop().run_in_executor(
-                    None, self.executor.run, tool_name, args
-                )
-                observation = self._format_execution_observation(
-                    tool_name, exit_code, stdout, stderr
-                )
-                self.logger.info(observation)
-                result_text = str(stdout or stderr or exit_code)
-                await asyncio.get_event_loop().run_in_executor(None, self.tts.say, result_text)
-                # Log to memory
-                self.memory.recent_actions.append(
-                    {'tool': tool_name, 'args': args, 'result': observation}
-                )
-                self.memory.save('recent_actions', self.memory.recent_actions)
-                return observation
+            # Send ALL commands to Gemini for intelligent interpretation
+            # No more direct pattern matching - let AI handle fuzzy matching with app list
+            
+            # Check if this is an app-related command - if so, skip semantic search
+            # and give Gemini the FULL tool list so it can see open-app-by-name
+            import re
+            is_app_command = re.search(r'\b(open|launch|start|run)\b', transcript.lower())
             
             # Two-stage intelligence: First search semantic index, then ask Gemini
             relevant_tools = None
-            if self.discovery_mode == 'auto':
+            if self.discovery_mode == 'auto' and not is_app_command:
                 self.logger.info(f"Searching semantic index for: {transcript}")
                 matches = self.semantic_index.search(transcript, max_results=5)  # Reduced from 10 to 5
                 if matches:
                     self.logger.info(f"Found {len(matches)} relevant scripts: {[m['id'] for m in matches]}")
                     # Build focused tool list from matches
                     relevant_tools = self._build_focused_tool_list(matches)
+            elif is_app_command:
+                self.logger.info(f"App command detected - using full tool list for better matching")
             
             # Generate response with focused or full tool list
             if relevant_tools:

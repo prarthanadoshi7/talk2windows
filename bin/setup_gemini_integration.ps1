@@ -25,8 +25,78 @@ function Show-Banner {
     Write-Host ""
 }
 
+function Generate-AppList {
+    Write-Host "[1/8] Generating app list for better recognition..." -NoNewline
+    try {
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        $listScript = Join-Path $projectRoot "bin\list-startapps-csv.ps1"
+        $csvPath = "$env:TEMP\startapps.csv"
+        
+        # Generate CSV
+        & $listScript -OutputFile $csvPath -Delimiter "," | Out-Null
+        
+        if (-not (Test-Path $csvPath)) {
+            Write-Host " WARNING" -ForegroundColor Yellow
+            Write-Host "  Could not generate app list. Continuing..." -ForegroundColor Yellow
+            return
+        }
+        
+        # Read CSV and extract app names only (skip header, take first column)
+        $appNames = @()
+        Import-Csv -Path $csvPath | ForEach-Object {
+            $appNames += $_.Name
+        }
+        
+        # Create comma-separated list
+        $appListText = ($appNames | Sort-Object) -join ", "
+        
+        # Inject into planner.txt
+        $plannerPath = Join-Path $projectRoot "prompts\planner.txt"
+        if (Test-Path $plannerPath) {
+            $plannerContent = Get-Content $plannerPath -Raw
+            
+            # Find the section to update (between markers)
+            $startMarker = "# Available Installed Applications"
+            $endMarker = "# Your Mandate"
+            
+            if ($plannerContent -match "(?s)$startMarker.*?$endMarker") {
+                # Replace existing section
+                $newSection = @"
+$startMarker
+
+The following applications are installed on this system (use these exact names when matching user commands):
+
+$appListText
+
+$endMarker
+"@
+                $plannerContent = $plannerContent -replace "(?s)$startMarker.*?$endMarker", $newSection
+            } else {
+                # Add new section before "Your Mandate"
+                $newSection = @"
+
+$startMarker
+
+The following applications are installed on this system (use these exact names when matching user commands):
+
+$appListText
+
+"@
+                $plannerContent = $plannerContent -replace "$endMarker", "$newSection$endMarker"
+            }
+            
+            $plannerContent | Set-Content -Path $plannerPath -Encoding UTF8 -NoNewline
+        }
+        
+        Write-Host " OK ($($appNames.Count) apps)" -ForegroundColor Green
+    } catch {
+        Write-Host " WARNING" -ForegroundColor Yellow
+        Write-Host "  Error generating app list: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 function Test-SerenadeInstallation {
-    Write-Host "[1/6] Checking Serenade installation..." -NoNewline
+    Write-Host "[2/8] Checking Serenade installation..." -NoNewline
     if (!(Test-Path "~\.serenade" -pathType container)) { 
         Write-Host " NOT FOUND" -ForegroundColor Red
         Write-Host ""
@@ -37,7 +107,7 @@ function Test-SerenadeInstallation {
 }
 
 function Get-WakeWord {
-    Write-Host "[2/6] Configuring wake word..." -NoNewline
+    Write-Host "[3/8] Configuring wake word..." -NoNewline
     $wakeWord = Read-Host "Enter your personal wake word (e.g. Windows, Alexa, Computer)"
     if ([string]::IsNullOrWhiteSpace($wakeWord)) {
         $wakeWord = "Windows"
@@ -47,7 +117,7 @@ function Get-WakeWord {
 }
 
 function Stop-SerenadeProcesses {
-    Write-Host "[3/6] Stopping any running Serenade instances..." -NoNewline
+    Write-Host "[4/8] Stopping any running Serenade instances..." -NoNewline
     try {
         Stop-Process -Name "Serenade" -Force -ErrorAction SilentlyContinue | Out-Null
         Start-Sleep -Seconds 2
@@ -60,7 +130,7 @@ function Stop-SerenadeProcesses {
 function Generate-GeminiConfig {
     param([string]$wakeWord, [string]$targetFile)
     
-    Write-Host "[4/6] Generating Gemini-powered configuration..." -NoNewline
+    Write-Host "[5/8] Generating Gemini-powered configuration..." -NoNewline
     try {
         # Ensure directory exists
         $dir = Split-Path -Parent $targetFile
@@ -76,7 +146,7 @@ function Generate-GeminiConfig {
         $js = @"
 /* 
  * Talk2Windows + Gemini AI Integration
- * Generated automatically - routes voice commands through Gemini for smart NLU
+ * Generated automatically - sends complete voice commands to Gemini for intelligent interpretation
  */
 
 // Configuration
@@ -84,65 +154,24 @@ const PYTHON_EXE = "$pythonExe";
 const PROJECT_ROOT = "$projectRoot";
 const WAKE_WORD = "$($wakeWord.toLower())";
 
-// Main voice command handler - routes everything to Gemini
-serenade.global().command(WAKE_WORD + " <%text%>", async (api, matches) => {
-    const userCommand = matches.text;
-    console.log('[Talk2Windows] Captured command:', userCommand);
+// Main command handler - <%phrase%> captures everything as a single string
+serenade.global().command(WAKE_WORD + " <%phrase%>", async (api, matches) => {
+    const userCommand = matches.phrase;
+    console.log('[Talk2Windows] Command received:', userCommand);
     
     try {
-        // Route to Gemini agent - run Python module from project root
+        // Send complete command to Gemini for intelligent interpretation
         const result = await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", userCommand], {
             shell: true,
             cwd: PROJECT_ROOT
         });
-        console.log('[Talk2Windows] Command result:', result);
+        console.log('[Talk2Windows] Executed successfully');
     } catch (error) {
-        console.error('[Talk2Windows] Command failed:', error);
+        console.error('[Talk2Windows] Error:', error);
     }
 });
 
-// Alternative patterns for better matching
-serenade.global().command(WAKE_WORD + " <%action%> <%target%>", async (api, matches) => {        
-    const userCommand = matches.action + ' ' + matches.target;
-    console.log('[Talk2Windows] Alternative pattern - ' + userCommand);
-
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", userCommand], {
-        shell: true,
-        cwd: PROJECT_ROOT
-    });
-});
-
-serenade.global().command(WAKE_WORD + " <%target%> <%action%>", async (api, matches) => {        
-    const userCommand = matches.target + ' ' + matches.action;
-    console.log('[Talk2Windows] Reverse pattern - ' + userCommand);
-
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", userCommand], {
-        shell: true,
-        cwd: PROJECT_ROOT
-    });
-});
-
-// Quick commands for common actions (bypass Gemini for speed)
-serenade.global().command(WAKE_WORD + " hello", async (api) => {
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", "say hello"], {
-        shell: true,
-        cwd: PROJECT_ROOT
-    });
-});
-
-serenade.global().command(WAKE_WORD + " goodbye", async (api) => {
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", "say goodbye"], {
-        shell: true,
-        cwd: PROJECT_ROOT
-    });
-});
-
-serenade.global().command(WAKE_WORD + " help", async (api) => {
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", "list available commands"], {
-        shell: true,
-        cwd: PROJECT_ROOT
-    });
-});
+console.log('[Talk2Windows] Listening for: "' + WAKE_WORD + ' <command>"');
 "@
         
         $js | Set-Content -Path $targetFile -Encoding UTF8
@@ -155,7 +184,7 @@ serenade.global().command(WAKE_WORD + " help", async (api) => {
 }
 
 function Update-BackendCatalog {
-    Write-Host "[4.5/6] Updating backend tool catalog and semantic index..." -NoNewline
+    Write-Host "[6/8] Updating backend tool catalog and semantic index..." -NoNewline
     try {
         $projectRoot = Split-Path -Parent $PSScriptRoot
         $pythonExe = (Get-Command python).Source
@@ -182,7 +211,7 @@ function Update-BackendCatalog {
 }
 
 function Disable-OldConfig {
-    Write-Host "[5/7] Ensuring only AI configuration is active..." -NoNewline
+    Write-Host "[7/8] Ensuring only AI configuration is active..." -NoNewline
     try {
         $oldConfig = "$HOME\.serenade\scripts\Talk2Windows.js"
         if (Test-Path $oldConfig) {
@@ -197,7 +226,7 @@ function Disable-OldConfig {
 }
 
 function Start-Serenade {
-    Write-Host "[6/7] Starting Serenade application..." -NoNewline
+    Write-Host "[8/8] Starting Serenade application..." -NoNewline
     try {
         # Try common installation paths
         $serenadePaths = @(
@@ -243,7 +272,7 @@ function Start-Serenade {
 
 function Show-Completion {
     Write-Host ""
-    Write-Host "[7/7] Setup complete!" -ForegroundColor Green
+    Write-Host "Setup complete!" -ForegroundColor Green
     Write-Host ""
     Write-Host "================================================================" -ForegroundColor Green
     Write-Host "                     Setup Complete!" -ForegroundColor Green
@@ -269,6 +298,7 @@ function Show-Completion {
 # Main execution
 try {
     Show-Banner
+    Generate-AppList
     Test-SerenadeInstallation
     $wakeWord = Get-WakeWord
     Stop-SerenadeProcesses
