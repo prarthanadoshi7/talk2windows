@@ -11,7 +11,7 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.agent.service import AgentService
+from src.agent.core.service import AgentService
 
 # Setup logging
 logging.basicConfig(

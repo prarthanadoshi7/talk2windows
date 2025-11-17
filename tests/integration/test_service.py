@@ -9,10 +9,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 
 class AgentServiceTests(unittest.TestCase):
-    @patch('src.agent.service.TTS')
-    @patch('src.agent.service.PowerShellExecutor')
-    @patch('src.agent.service.ToolCatalogManager')
-    @patch('src.agent.service.genai.GenerativeModel')
+    @patch('src.agent.utils.tts.TTS')
+    @patch('src.agent.execution.powershell_executor.PowerShellExecutor')
+    @patch('src.agent.core.tool_catalog_manager.ToolCatalogManager')
+    @patch('src.agent.core.service.genai.GenerativeModel')
     def test_execute_plan_uses_tool_id(
         self,
         mock_model,
@@ -27,7 +27,7 @@ class AgentServiceTests(unittest.TestCase):
         mock_executor_instance = mock_executor.return_value
         mock_executor_instance.run.return_value = (0, 'ok', '')
 
-        from src.agent.service import AgentService
+        from src.agent.core.service import AgentService
 
         service = AgentService(api_key='test', prompt_provider=lambda _: 'yes')
 
@@ -36,10 +36,10 @@ class AgentServiceTests(unittest.TestCase):
 
         mock_executor_instance.run.assert_called_with('open-calculator', {})
 
-    @patch('src.agent.service.TTS')
-    @patch('src.agent.service.PowerShellExecutor')
-    @patch('src.agent.service.ToolCatalogManager')
-    @patch('src.agent.service.genai.GenerativeModel')
+    @patch('src.agent.utils.tts.TTS')
+    @patch('src.agent.execution.powershell_executor.PowerShellExecutor')
+    @patch('src.agent.core.tool_catalog_manager.ToolCatalogManager')
+    @patch('src.agent.core.service.genai.GenerativeModel')
     def test_confirm_medium_uses_prompt_provider(
         self,
         mock_model,
@@ -57,7 +57,7 @@ class AgentServiceTests(unittest.TestCase):
         def prompt(_):
             return next(responses)
 
-        from src.agent.service import AgentService
+        from src.agent.core.service import AgentService
 
         service = AgentService(api_key='test', prompt_provider=prompt)
 
@@ -65,7 +65,7 @@ class AgentServiceTests(unittest.TestCase):
         self.assertTrue(is_confirmed)
     
     def test_confirm_medium_auto(self):
-        from src.agent.service import AgentService
+        from src.agent.core.service import AgentService
         service = AgentService(api_key='test', prompt_provider=lambda _: 'no')
         service.confirm_policy = 'auto'
         is_confirmed = asyncio.run(service.confirm('Execute open-calculator', 'medium'))

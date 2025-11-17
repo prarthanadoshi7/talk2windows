@@ -12,7 +12,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.agent.powershell_executor import PowerShellExecutor
+from src.agent.execution.powershell_executor import PowerShellExecutor
 
 class TestPowerShellExecutor(unittest.TestCase):
     def setUp(self):

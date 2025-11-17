@@ -41,9 +41,12 @@ serenade.global().command(WAKE_WORD + " <%text%>", async (api, matches) => {
     const userCommand = matches.text;
     console.log('[Talk2Windows] Captured command:', userCommand);
     
+    // Provide immediate feedback to user
+    await api.typeText(`[Talk2Windows] Processing: ${userCommand}\n`);
+    
     try {
         // Route to Gemini agent - run Python module from project root
-        const result = await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", userCommand], {
+        const result = await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", userCommand], {
             shell: true,
             cwd: PROJECT_ROOT
         });
@@ -58,7 +61,7 @@ serenade.global().command(WAKE_WORD + " <%action%> <%target%>", async (api, matc
     const userCommand = matches.action + ' ' + matches.target;
     console.log('[Talk2Windows] Alternative pattern - ' + userCommand);
 
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", userCommand], {
+    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", userCommand], {
         shell: true,
         cwd: PROJECT_ROOT
     });
@@ -68,7 +71,7 @@ serenade.global().command(WAKE_WORD + " <%target%> <%action%>", async (api, matc
     const userCommand = matches.target + ' ' + matches.action;
     console.log('[Talk2Windows] Reverse pattern - ' + userCommand);
 
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", userCommand], {
+    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", userCommand], {
         shell: true,
         cwd: PROJECT_ROOT
     });
@@ -76,21 +79,21 @@ serenade.global().command(WAKE_WORD + " <%target%> <%action%>", async (api, matc
 
 // Quick commands for common actions (bypass Gemini for speed)
 serenade.global().command(WAKE_WORD + " hello", async (api) => {
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", "say hello"], {
+    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", "say hello"], {
         shell: true,
         cwd: PROJECT_ROOT
     });
 });
 
 serenade.global().command(WAKE_WORD + " goodbye", async (api) => {
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", "say goodbye"], {
+    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", "say goodbye"], {
         shell: true,
         cwd: PROJECT_ROOT
     });
 });
 
 serenade.global().command(WAKE_WORD + " help", async (api) => {
-    await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", "list available commands"], {
+    await api.runShell(PYTHON_EXE, ["-m", "src.agent.integration.serenade_bridge", "list available commands"], {
         shell: true,
         cwd: PROJECT_ROOT
     });

@@ -19,10 +19,10 @@ class SemanticIndex:
     def __init__(self, scripts_dir: Optional[str] = None):
         self.logger = logging.getLogger(__name__)
         self.scripts_dir = scripts_dir or os.path.join(
-            os.path.dirname(__file__), "..", "..", "scripts"
+            os.path.dirname(__file__), "..", "..", "..", "scripts"
         )
         self.index_file = os.path.join(
-            os.path.dirname(__file__), "semantic_index.json"
+            os.path.dirname(__file__), "..", "config", "semantic_index.json"
         )
         self.index = self._load_or_build_index()
     

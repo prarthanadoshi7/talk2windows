@@ -3,8 +3,8 @@ import json
 import logging
 import websockets
 import os
-from .service import AgentService
-from .config import setup_environment
+from ..core.service import AgentService
+from ..config.config import setup_environment
 
 # Set up environment variables for consistent operation
 setup_environment()

@@ -7,12 +7,12 @@ from typing import Callable, Optional, List, Dict
 
 import google.generativeai as genai
 
-from .config import get_gemini_api_key, setup_environment
-from .memory.store import MemoryStore
-from .powershell_executor import PowerShellExecutor
-from .tool_catalog_manager import ToolCatalogManager
-from .semantic_index import SemanticIndex
-from .tts import TTS
+from ..config.config import get_gemini_api_key, setup_environment
+from ..memory.store import MemoryStore
+from ..execution.powershell_executor import PowerShellExecutor
+from ..core.tool_catalog_manager import ToolCatalogManager
+from ..core.semantic_index import SemanticIndex
+from ..utils.tts import TTS
 
 # Set up environment variables for consistent operation
 setup_environment()
@@ -40,7 +40,7 @@ class AgentService:
         self.discovery_mode = os.getenv('TALK2WINDOWS_DISCOVERY_MODE', 'auto')
 
         planner_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "prompts", "planner.txt"
+            os.path.dirname(__file__), "..", "..", "..", "prompts", "planner.txt"
         )
         with open(planner_path, 'r', encoding='utf-8') as file:
             self.system_instruction = file.read().strip()

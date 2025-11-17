@@ -6,7 +6,7 @@ import logging
 class ToolCatalogManager:
     def __init__(self, scripts_dir=None):
         if scripts_dir is None:
-            scripts_dir = os.path.join(os.path.dirname(__file__), "../..", "scripts")
+            scripts_dir = os.path.join(os.path.dirname(__file__), "../../..", "scripts")
         self.scripts_dir = scripts_dir
         self.logger = logging.getLogger(__name__)
 

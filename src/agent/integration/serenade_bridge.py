@@ -11,8 +11,8 @@ Usage:
 import asyncio
 import logging
 import sys
-from src.agent.service import AgentService
-from src.agent.config import setup_environment
+from ..core.service import AgentService
+from ..config.config import setup_environment
 
 # Set up environment variables for consistent operation
 setup_environment()

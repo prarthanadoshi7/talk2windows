@@ -13,7 +13,7 @@ try {
     
     # If ScriptID contains path separators, use it as-is (relative to scripts/)
     # Otherwise, search recursively in scripts/ directory
-    $scriptsRoot = Join-Path $PSScriptRoot "../../scripts"
+    $scriptsRoot = Join-Path $PSScriptRoot "../../../scripts"
     
     if ($ScriptID -match '[\\/]') {
         # Path provided, use it directly

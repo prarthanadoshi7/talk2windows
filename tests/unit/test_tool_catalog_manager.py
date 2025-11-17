@@ -12,7 +12,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.agent.tool_catalog_manager import ToolCatalogManager
+from src.agent.core.tool_catalog_manager import ToolCatalogManager
 
 class TestToolCatalogManager(unittest.TestCase):
     def setUp(self):

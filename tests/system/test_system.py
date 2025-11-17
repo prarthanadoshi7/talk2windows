@@ -11,10 +11,10 @@ import pytest
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.agent.service import AgentService
-from src.agent.semantic_index import SemanticIndex
-from src.agent.powershell_executor import PowerShellExecutor
-from src.agent.tool_catalog_manager import ToolCatalogManager
+from src.agent.core.service import AgentService
+from src.agent.core.semantic_index import SemanticIndex
+from src.agent.execution.powershell_executor import PowerShellExecutor
+from src.agent.core.tool_catalog_manager import ToolCatalogManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

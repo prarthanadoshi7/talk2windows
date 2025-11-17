@@ -32,7 +32,7 @@ try {
 # Build semantic index
 Write-Host "[3/3] Building semantic index..." -NoNewline
 try {
-    $output = python -m src.agent.semantic_index 2>&1 | Out-String
+    $output = python -m src.agent.core.semantic_index 2>&1 | Out-String
     if ($output -match "Built index with (\d+) scripts") {
         $count = $Matches[1]
         Write-Host " OK ($count scripts)" -ForegroundColor Green
