@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser with the War Brokers browser game.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://warbrokers.io"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://warbrokers.io"
+

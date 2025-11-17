@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser with the TicTacToe game.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://tmaiadev-tictactoe.netlify.app/"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://tmaiadev-tictactoe.netlify.app/"
+

@@ -24,7 +24,8 @@ try {
 	} elseif ($name -like "*Tic*Tac*Toe*") { $URL = "https://tmaiadev-tictactoe.netlify.app/"
 	} elseif ($name -like "*Tower*") { $URL = "https://www.towergame.app/"
 	} else { throw "Repeat it, please. What about Pinball?" }
-	& "$PSScriptRoot/open-browser.ps1" $URL
+	& "\$PSScriptRoot/../../apps/open/open-browser.ps1" $URL
 	$reply = "Yeah, let's have fun!"
 } catch { $reply = "Sorry: $($Error[0])" }
 & "$PSScriptRoot/../../say.ps1" $reply
+

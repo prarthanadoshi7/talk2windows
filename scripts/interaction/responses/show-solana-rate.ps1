@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser and shows the Solana cryptocurrency exchange rate.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://crypto.com/price/solana"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://crypto.com/price/solana"
+

@@ -6,4 +6,5 @@
 #>
 
 & "$PSScriptRoot/../../say.ps1" "Hold on."
-& "$PSScriptRoot/open-browser.ps1" "https://earthquake.usgs.gov/earthquakes/map/?extent=-86.07947,-169.80469&extent=86.07947,301.28906"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://earthquake.usgs.gov/earthquakes/map/?extent=-86.07947,-169.80469&extent=86.07947,301.28906"
+

@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser with the Google Find My Device website.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://www.google.com/android/find"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://www.google.com/android/find"
+

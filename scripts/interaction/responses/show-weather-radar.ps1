@@ -6,4 +6,5 @@
 #>
 
 & "$PSScriptRoot/../../say.ps1" "Hold on."
-& "$PSScriptRoot/open-browser.ps1" "https://www.windy.com/-Weather-radar-radar"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://www.windy.com/-Weather-radar-radar"
+

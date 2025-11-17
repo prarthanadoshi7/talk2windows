@@ -222,19 +222,27 @@ class AgentService:
             
             # Check if this is an app-related command - if so, skip semantic search
             # and give Gemini the FULL tool list so it can see open-app-by-name
+            # EXCEPTION: If user explicitly says website-related keywords, use semantic search
             import re
-            is_app_command = re.search(r'\b(open|launch|start|run)\b', transcript.lower())
+            transcript_lower = transcript.lower()
+            # Website indicators: explicit "website", Google services, magazines, manuals, cities, rates, music, games
+            website_keywords = ['website', 'web site', 'google', 'magazine', 'manual', 'city', 'rate', 'music', 'sound', 'game', 'wallpaper']
+            has_website_keyword = any(keyword in transcript_lower for keyword in website_keywords)
+            is_app_command = re.search(r'\b(open|launch|start|run)\b', transcript_lower) and not has_website_keyword
             
             # Two-stage intelligence: First search semantic index, then ask Gemini
+            # Always run the semantic search to prefer website scripts and other focused tools
             relevant_tools = None
-            if self.discovery_mode == 'auto' and not is_app_command:
+            if self.discovery_mode == 'auto':
                 self.logger.info(f"Searching semantic index for: {transcript}")
                 matches = self.semantic_index.search(transcript, max_results=5)  # Reduced from 10 to 5
                 if matches:
                     self.logger.info(f"Found {len(matches)} relevant scripts: {[m['id'] for m in matches]}")
                     # Build focused tool list from matches
                     relevant_tools = self._build_focused_tool_list(matches)
-            elif is_app_command:
+            # If this is an app-related command and no specific scripts were found,
+            # fall back to giving Gemini the full tool list for open-app-by-name fuzzy matching
+            if is_app_command and not relevant_tools:
                 self.logger.info(f"App command detected - using full tool list for better matching")
             
             # Generate response with focused or full tool list
@@ -257,6 +265,12 @@ class AgentService:
                 )
             
             # Check for function calls FIRST (before accessing .text which may fail)
+            # Debug: log response structure to help diagnose JSON parsing issues
+            try:
+                self.logger.debug(f"Gemini response raw: {response}")
+            except Exception:
+                self.logger.debug("Gemini response raw: <unprintable>")
+
             if response.candidates and response.candidates[0].content.parts:
                 for part in response.candidates[0].content.parts:
                     if hasattr(part, 'function_call') and part.function_call:
@@ -291,7 +305,7 @@ class AgentService:
             
             # Check for plan in text (only if no function call was made)
             try:
-                if response.text:
+                if getattr(response, 'text', None):
                     stripped = response.text.strip()
                     # Check for JSON plan
                     if stripped.startswith('{'):

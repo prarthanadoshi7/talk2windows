@@ -6,5 +6,6 @@
 #>
 
 param([string]$Location = "")
-& "$PSScriptRoot/open-browser.ps1" "https://www.google.com/maps/place/$Location"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://www.google.com/maps/place/$Location"
 & "$PSScriptRoot/../../say.ps1" "It's here."
+

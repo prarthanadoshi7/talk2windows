@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser with the Bitbucket status website.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://bitbucket.status.atlassian.com/"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://bitbucket.status.atlassian.com/"
+

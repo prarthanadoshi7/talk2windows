@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser and shows the Tether cryptocurrency exchange rate.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://crypto.com/price/tether"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://crypto.com/price/tether"
+

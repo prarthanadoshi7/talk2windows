@@ -5,4 +5,5 @@
     This PowerShell script launches the Web browser and shows planet Mars in Google Maps.
 #>
 
-& "$PSScriptRoot/open-browser.ps1" "https://www.google.com/maps/space/mars"
+& "\$PSScriptRoot/../../apps/open/open-browser.ps1" "https://www.google.com/maps/space/mars"
+
