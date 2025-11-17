@@ -7,13 +7,15 @@ from typing import Callable, Optional, List, Dict
 
 import google.generativeai as genai
 
-from .config import get_gemini_api_key
+from .config import get_gemini_api_key, setup_environment
 from .memory.store import MemoryStore
 from .powershell_executor import PowerShellExecutor
 from .tool_catalog_manager import ToolCatalogManager
 from .semantic_index import SemanticIndex
 from .tts import TTS
 
+# Set up environment variables for consistent operation
+setup_environment()
 
 class AgentService:
     def __init__(
@@ -54,7 +56,7 @@ class AgentService:
         }
         
         self.model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
+            model_name='gemini-2.5-flash',  # Using faster 2.5 flash model
             system_instruction=self.system_instruction,
             tools=self.tools,
         )
@@ -166,7 +168,7 @@ class AgentService:
             relevant_tools = None
             if self.discovery_mode == 'auto':
                 self.logger.info(f"Searching semantic index for: {transcript}")
-                matches = self.semantic_index.search(transcript, max_results=10)
+                matches = self.semantic_index.search(transcript, max_results=5)  # Reduced from 10 to 5
                 if matches:
                     self.logger.info(f"Found {len(matches)} relevant scripts: {[m['id'] for m in matches]}")
                     # Build focused tool list from matches
@@ -176,7 +178,7 @@ class AgentService:
             if relevant_tools:
                 # Create temporary model with focused tools
                 focused_model = genai.GenerativeModel(
-                    model_name='gemini-2.5-flash',
+                    model_name='gemini-2.5-flash',  # Using faster 2.0 flash model
                     system_instruction=self.system_instruction,
                     tools=relevant_tools,
                 )

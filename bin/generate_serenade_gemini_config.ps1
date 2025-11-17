@@ -21,8 +21,8 @@ try {
     }
     
     # Get paths
-    $pythonExe = (Get-Command python).Source -replace "\\", "\\\\"
-    $projectRoot = (Split-Path -Parent $PSScriptRoot) -replace "\\", "\\\\"
+    $pythonExe = (Get-Command python).Source -replace "\\", "\\"
+    $projectRoot = (Split-Path -Parent $PSScriptRoot) -replace "\\", "\\"
     
     # Generate JavaScript configuration
     $js = @"
@@ -39,8 +39,35 @@ const WAKE_WORD = "$($wakeWord.toLower())";
 // Main voice command handler - routes everything to Gemini
 serenade.global().command(WAKE_WORD + " <%text%>", async (api, matches) => {
     const userCommand = matches.text;
+    console.log('[Talk2Windows] Captured command:', userCommand);
     
-    // Route to Gemini agent - run Python module from project root
+    try {
+        // Route to Gemini agent - run Python module from project root
+        const result = await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", userCommand], {
+            shell: true,
+            cwd: PROJECT_ROOT
+        });
+        console.log('[Talk2Windows] Command result:', result);
+    } catch (error) {
+        console.error('[Talk2Windows] Command failed:', error);
+    }
+});
+
+// Alternative patterns for better matching
+serenade.global().command(WAKE_WORD + " <%action%> <%target%>", async (api, matches) => {        
+    const userCommand = matches.action + ' ' + matches.target;
+    console.log('[Talk2Windows] Alternative pattern - ' + userCommand);
+
+    await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", userCommand], {
+        shell: true,
+        cwd: PROJECT_ROOT
+    });
+});
+
+serenade.global().command(WAKE_WORD + " <%target%> <%action%>", async (api, matches) => {        
+    const userCommand = matches.target + ' ' + matches.action;
+    console.log('[Talk2Windows] Reverse pattern - ' + userCommand);
+
     await api.runShell(PYTHON_EXE, ["-m", "src.agent.serenade_bridge", userCommand], {
         shell: true,
         cwd: PROJECT_ROOT

@@ -6,6 +6,18 @@ from typing import Any, Dict
 _CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
 _ENV_API_KEY = "TALK2WINDOWS_GEMINI_API_KEY"
 
+# Default environment variables for proper Serenade integration
+DEFAULT_ENV_VARS = {
+    'TALK2WINDOWS_DISABLE_TTS': '1',
+    'TALK2WINDOWS_CONFIRM_POLICY': 'auto',
+    'TALK2WINDOWS_DISCOVERY_MODE': 'auto'
+}
+
+def setup_environment():
+    """Set up default environment variables for proper operation."""
+    for key, value in DEFAULT_ENV_VARS.items():
+        if not os.getenv(key):
+            os.environ[key] = value
 
 def _load_file_config() -> Dict[str, Any]:
     if not _CONFIG_PATH.exists():
@@ -15,7 +27,6 @@ def _load_file_config() -> Dict[str, Any]:
             return json.load(handle)
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"Invalid JSON in {_CONFIG_PATH}: {exc}") from exc
-
 
 def get_gemini_api_key() -> str:
     """Return the Gemini API key from env or optional config file."""
