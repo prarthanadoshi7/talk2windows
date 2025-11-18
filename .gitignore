@@ -3,3 +3,5 @@ __pycache__
 tools.json
 *.tmp
 agent/config.json
+# Ignore Visual Studio temp files
+.vs/
