@@ -188,6 +188,21 @@ if ($chromeProcesses) {
     Write-Host "  -> No Chrome instances to close" -ForegroundColor Gray
 }
 
+# Step 12: Close all Chrome instances
+Write-Host "`n[13] Pushing changes to git..." -ForegroundColor Yellow
+# Path to repo
+$RepoPath = "C:\Users\RDP\Source\Repos\talk2windows"
+# Go to repo
+Set-Location $RepoPath
+# Add everything
+git add .
+# Commit with timestamp message
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+git commit -m "Auto update at $timestamp"
+
+# Push to origin main
+git push origin main
+
 Write-Host "`n================================" -ForegroundColor Green
 Write-Host "  Automation Complete!" -ForegroundColor Green
 Write-Host "================================" -ForegroundColor Green
