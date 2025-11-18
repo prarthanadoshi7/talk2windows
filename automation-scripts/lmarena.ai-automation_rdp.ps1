@@ -188,7 +188,7 @@ $clipboardContent = Get-Clipboard -Raw
 
 if ($clipboardContent) {
     # Define file path
-    $filePath = "D:\Projects\project-exploration\interactive_pc\talk2windows\automation-scripts\lmarena_cookies.txt"
+    $filePath = "C:\Users\RDP\Source\Repos\talk2windows\automation-scripts\lmarena_cookies.txt"
     
     # Create directory if it doesn't exist
     $directory = Split-Path -Path $filePath -Parent
@@ -209,6 +209,7 @@ if ($clipboardContent) {
 } else {
     Write-Host "  -> Warning: Clipboard is empty!" -ForegroundColor Red
 }
+
 
 # Step 12: Close all Chrome instances
 Write-Host "`n[12] Closing all Chrome instances..." -ForegroundColor Yellow
